@@ -65,7 +65,6 @@ export default function OrderConfirmationPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <h2 className="text-xl font-bold text-text-primary mb-2">Order Not Found</h2>
-        <p className="text-sm text-text-muted mb-6">We couldn&apos;t retrieve this order confirmation.</p>
         <Link to="/orders">
           <Button>View Order History</Button>
         </Link>

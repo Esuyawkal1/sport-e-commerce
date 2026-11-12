@@ -1,12 +1,16 @@
 import { Link } from 'react-router-dom';
-import { Dumbbell } from 'lucide-react';
+import brandLogo from '../../assets/sport market logo.webp';
 
 export default function Footer() {
   return (
     <footer className="border-t border-brand-border mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-text-muted text-sm">
-        <div className="flex items-center gap-2">
-          <Dumbbell size={16} className="text-brand-accent" />
+        <div className="flex items-center gap-2.5">
+          <img
+            src={brandLogo}
+            alt="SportMarket"
+            className="h-6 w-auto object-contain rounded bg-white px-1 shadow-xs"
+          />
           <span>
             Sport<span className="text-brand-accent">Market</span> &copy; {new Date().getFullYear()}
           </span>

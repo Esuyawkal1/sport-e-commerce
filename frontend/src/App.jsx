@@ -19,7 +19,9 @@ import OrderConfirmationPage from './pages/orders/OrderConfirmationPage.jsx';
 import OrdersPage            from './pages/orders/OrdersPage.jsx';
 import OrderDetailPage       from './pages/orders/OrderDetailPage.jsx';
 import VendorDashboardPage   from './pages/vendor/VendorDashboardPage.jsx';
+import AdminDashboardPage    from './pages/admin/AdminDashboardPage.jsx';
 import AdminCategoriesPage   from './pages/admin/AdminCategoriesPage.jsx';
+import AdminVendorsPage      from './pages/admin/AdminVendorsPage.jsx';
 import NotFoundPage          from './pages/NotFoundPage.jsx';
 import LoginPage             from './pages/auth/LoginPage.jsx';
 import RegisterPage          from './pages/auth/RegisterPage.jsx';
@@ -153,13 +155,43 @@ export default function App() {
                 }
               />
 
-              {/* Admin Taxonomy & Category Manager */}
+              {/* Admin Portal & Management */}
+              <Route
+                path="/admin"
+                element={
+                  <Layout>
+                    <ProtectedRoute role="admin">
+                      <AdminDashboardPage />
+                    </ProtectedRoute>
+                  </Layout>
+                }
+              />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <Layout>
+                    <ProtectedRoute role="admin">
+                      <AdminDashboardPage />
+                    </ProtectedRoute>
+                  </Layout>
+                }
+              />
               <Route
                 path="/admin/categories"
                 element={
                   <Layout>
                     <ProtectedRoute role="admin">
                       <AdminCategoriesPage />
+                    </ProtectedRoute>
+                  </Layout>
+                }
+              />
+              <Route
+                path="/admin/vendors"
+                element={
+                  <Layout>
+                    <ProtectedRoute role="admin">
+                      <AdminVendorsPage />
                     </ProtectedRoute>
                   </Layout>
                 }
