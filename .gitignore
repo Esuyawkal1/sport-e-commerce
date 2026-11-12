@@ -43,6 +43,10 @@ temp/
 # Uploads & Local Storage
 uploads/
 
+# Documentation & Agent Info
+doc/
+docs/
+
 # IDE & Editor Files
 .vscode/*
 !.vscode/extensions.json
