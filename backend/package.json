@@ -1,0 +1,19 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js",
+    "lint": "node --check src/app.js src/controllers/*.js src/services/*.js src/models/*.js src/routes/*.js src/middleware/*.js",
+    "test": "node --test tests/**/*.test.js",
+    "seed": "node src/seeds/sports-catalog.seed.js"
+  },
+  "devDependencies": {
+    "prisma": "8.0.0-rc.30"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1161.0"
+  }
+}

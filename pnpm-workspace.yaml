@@ -1,0 +1,8 @@
+packages:
+  - 'backend'
+  - 'frontend'
+  - 'upload-service'
+allowBuilds:
+  esbuild: false
+  workerd: false
+  sharp: true
