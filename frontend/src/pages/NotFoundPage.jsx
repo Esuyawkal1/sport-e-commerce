@@ -14,9 +14,6 @@ export default function NotFoundPage() {
       <h1 className="text-3xl sm:text-4xl font-extrabold text-text-primary mb-3">
         Page Off Course
       </h1>
-      <p className="text-sm text-text-muted max-w-md mb-8">
-        We couldn&apos;t find the sports gear or page you were looking for. It may have been moved, renamed, or retired.
-      </p>
       <div className="flex flex-wrap items-center justify-center gap-3">
         <Link to="/">
           <Button size="md">Return Home</Button>

@@ -1,6 +1,5 @@
 import { useState, useEffect, useId, useCallback } from 'react';
 import {
-  Shield,
   Layers,
   Plus,
   Search,
@@ -22,6 +21,7 @@ import Button from '../../components/ui/Button.jsx';
 import Input from '../../components/ui/Input.jsx';
 import Badge from '../../components/ui/Badge.jsx';
 import Skeleton from '../../components/ui/Skeleton.jsx';
+import AdminHeader from '../../components/admin/AdminHeader.jsx';
 
 export default function AdminCategoriesPage() {
   const idPrefix = useId();
@@ -180,58 +180,42 @@ export default function AdminCategoriesPage() {
   return (
     <div className="flex flex-col gap-8 pb-16 max-w-6xl mx-auto">
       {/* ── Admin Header ─────────────────────────────────── */}
-      <div className="bg-brand-surface border border-brand-border rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="size-14 rounded-2xl bg-brand-bg border border-brand-border text-brand-accent flex items-center justify-center font-bold text-xl shadow-glow">
-            <Shield size={24} />
+      <AdminHeader
+        title="Taxonomy & Category Manager"
+        description="Dynamically structure sports disciplines, hierarchy, and store catalog taxonomy."
+        actions={
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadCategories}
+              loading={loading}
+              className="flex items-center gap-1.5 text-xs"
+            >
+              <RotateCw size={13} /> Refresh
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => {
+                setFormData({
+                  name: '',
+                  description: '',
+                  slug: '',
+                  parentCategoryId: '',
+                  iconUrl: '',
+                  imageUrl: '',
+                  displayOrder: categories.length + 1,
+                });
+                setCreateModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 text-xs shadow-glow"
+            >
+              <Plus size={14} /> Add Category
+            </Button>
           </div>
-
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-extrabold text-text-primary tracking-tight">
-                Taxonomy & Category Manager
-              </h1>
-              <Badge variant="accent" size="xs">
-                Admin Panel
-              </Badge>
-            </div>
-            <p className="text-xs text-text-muted mt-1">
-              Dynamically structure sports disciplines, hierarchy, and store catalog taxonomy.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadCategories}
-            loading={loading}
-            className="flex items-center gap-1.5 text-xs"
-          >
-            <RotateCw size={13} /> Refresh
-          </Button>
-
-          <Button
-            size="sm"
-            onClick={() => {
-              setFormData({
-                name: '',
-                description: '',
-                slug: '',
-                parentCategoryId: '',
-                iconUrl: '',
-                imageUrl: '',
-                displayOrder: categories.length + 1,
-              });
-              setCreateModalOpen(true);
-            }}
-            className="flex items-center gap-1.5 text-xs shadow-glow"
-          >
-            <Plus size={14} /> Add Category
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── Feedback Toasts ──────────────────────────────── */}
       {error && (

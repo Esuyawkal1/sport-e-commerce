@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Dumbbell } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useAsync } from '../../hooks/useAsync.js';
 import Button from '../../components/ui/Button.jsx';
 import Input from '../../components/ui/Input.jsx';
+import brandLogo from '../../assets/sport market logo.webp';
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -51,12 +51,16 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
 
         {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <Dumbbell className="text-brand-accent" size={28} />
+        <Link to="/" className="flex items-center justify-center gap-2.5 mb-8">
+          <img
+            src={brandLogo}
+            alt="SportMarket"
+            className="h-10 w-auto object-contain rounded-lg bg-white px-1.5 shadow-sm"
+          />
           <span className="text-2xl font-bold text-text-primary tracking-tight">
             Sport<span className="text-brand-accent">Market</span>
           </span>
-        </div>
+        </Link>
 
         {/* Card */}
         <div className="bg-brand-surface border border-brand-border rounded-2xl p-8">

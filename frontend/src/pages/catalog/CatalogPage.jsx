@@ -260,9 +260,6 @@ export default function CatalogPage() {
               <Search size={22} />
             </span>
             <h3 className="text-lg font-bold text-text-primary mb-1">No products found</h3>
-            <p className="text-sm text-text-muted max-w-sm mb-6">
-              We couldn&apos;t find any gear matching your current filters. Try searching for something else or clearing filters.
-            </p>
             <Button variant="outline" size="sm" onClick={handleClearFilters}>
               Clear All Filters
             </Button>
