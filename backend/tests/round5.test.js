@@ -95,11 +95,19 @@ test("Round 5: Centralized Error Handler formats errors into standardized clean 
   assert.match(capturedBody.message, /Path 'name' is required/);
 });
 
-test("Admin & Role Governance: Vendor creation is administered and Customer is public registration default", async () => {
-  const { createVendorByAdmin, assignVendorRoleByAdmin, listAllVendorsByAdmin } = await import(
-    "../src/services/adminVendor.service.js"
-  );
-  assert.equal(typeof createVendorByAdmin, "function");
-  assert.equal(typeof assignVendorRoleByAdmin, "function");
-  assert.equal(typeof listAllVendorsByAdmin, "function");
+test("Admin & Catalog Governance: Admin product management and catalog administration services", async () => {
+  const {
+    listAdminProducts,
+    getAdminProductById,
+    createAdminProduct,
+    updateAdminProduct,
+    deleteAdminProduct,
+    adjustInventoryQuantity,
+  } = await import("../src/services/adminProduct.service.js");
+  assert.equal(typeof listAdminProducts, "function");
+  assert.equal(typeof getAdminProductById, "function");
+  assert.equal(typeof createAdminProduct, "function");
+  assert.equal(typeof updateAdminProduct, "function");
+  assert.equal(typeof deleteAdminProduct, "function");
+  assert.equal(typeof adjustInventoryQuantity, "function");
 });

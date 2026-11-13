@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext.jsx';
  * Preserves the attempted path so the user is redirected back after login.
  */
 export default function ProtectedRoute({ children, role }) {
-  const { isAuthenticated, user, isVendor, isAdmin } = useAuth();
+  const { isAuthenticated, user, isAdmin } = useAuth();
   const location = useLocation();
 
   if (!isAuthenticated) {
@@ -14,16 +14,12 @@ export default function ProtectedRoute({ children, role }) {
   }
 
   if (role) {
-    const isVendorRole = role === 'vendor' || role === 'SELLER';
     const isAdminRole = role === 'admin' || role === 'ADMIN';
 
-    if (isVendorRole && !isVendor) {
-      return <Navigate to="/" replace />;
-    }
     if (isAdminRole && !isAdmin) {
       return <Navigate to="/" replace />;
     }
-    if (!isVendorRole && !isAdminRole && user?.role !== role) {
+    if (!isAdminRole && user?.role !== role) {
       return <Navigate to="/" replace />;
     }
   }

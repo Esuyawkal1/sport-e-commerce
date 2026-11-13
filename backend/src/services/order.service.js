@@ -1,14 +1,12 @@
 import { v4 as uuidv4 } from "uuid";
 import { OrderModel } from "../models/order.model.js";
 import { OrderItemModel } from "../models/orderItem.model.js";
-import { VendorSubOrderModel } from "../models/vendorSubOrder.model.js";
 import { CartModel } from "../models/cart.model.js";
 import { CartItemModel } from "../models/cartItem.model.js";
 import { VariantModel } from "../models/variant.model.js";
 import { ProductModel } from "../models/product.model.js";
 import { InventoryModel } from "../models/inventory.model.js";
 import { TransactionModel } from "../models/transaction.model.js";
-import { VendorProfileModel } from "../models/vendorProfile.model.js";
 import { getActiveCart } from "./cart.service.js";
 import { consumeStockReservation } from "./reservation.service.js";
 
@@ -38,22 +36,16 @@ export const placeOrder = async (
       const existingOrder = await OrderModel.findOne({
         orderId: existingTx.orderId,
       }).lean();
-      const existingSubOrders = await VendorSubOrderModel.find({
-        orderId: existingTx.orderId,
-      }).lean();
 
       return {
         isDuplicate: true,
-        order: {
-          ...existingOrder,
-          vendorSubOrders: existingSubOrders,
-        },
+        order: existingOrder,
         transaction: existingTx,
       };
     }
   }
 
-  // 2. Locate active cart with enriched multi-vendor details
+  // 2. Locate active cart
   const enrichedCart = await getActiveCart(userId);
 
   if (
@@ -71,7 +63,6 @@ export const placeOrder = async (
   if (reservationId) {
     await consumeStockReservation(reservationId);
   } else {
-    // Permanent atomic inventory check & decrement
     const deductedItems = [];
     try {
       for (const item of enrichedCart.items) {
@@ -104,7 +95,6 @@ export const placeOrder = async (
         });
       }
     } catch (err) {
-      // Rollback any successfully deducted items
       for (const ded of deductedItems) {
         await InventoryModel.findOneAndUpdate(
           { variantId: ded.variantId },
@@ -134,7 +124,7 @@ export const placeOrder = async (
   const randomSuffix = Math.floor(100 + Math.random() * 900);
   const orderNumber = `ORD-${todayStr}-${randomSuffix}`;
 
-  // 6. Create Master Order
+  // 6. Create Direct Store Order
   const order = await OrderModel.create({
     userId,
     orderNumber,
@@ -153,82 +143,34 @@ export const placeOrder = async (
     orderDate: new Date(),
   });
 
-  // 7. Multi-Vendor Order Splitting: create sub-orders per vendor
-  const subOrders = [];
+  // 7. Create OrderItem Records
   const allOrderItems = [];
-  let commissionTotal = 0;
-  let netVendorPayoutTotal = 0;
-
-  let vendorIndex = 1;
-  for (const group of enrichedCart.vendorGroups) {
-    const vendorProfile = await VendorProfileModel.findOne({
-      userId: group.sellerId,
-    }).lean();
-
-    const commissionRate = vendorProfile?.commissionRate ?? 0.1;
-    const subtotalGroup = round2(group.subtotal);
-    const shippingFeeGroup = round2(group.shippingFee || 0);
-    const commissionAmount = round2(subtotalGroup * commissionRate);
-    const vendorPayout = round2(
-      subtotalGroup + shippingFeeGroup - commissionAmount,
-    );
-
-    commissionTotal += commissionAmount;
-    netVendorPayoutTotal += vendorPayout;
-
-    const subOrderNumber = `${orderNumber}-V${vendorIndex++}`;
-
-    const subOrderItems = group.items.map((i) => ({
+  for (const item of enrichedCart.items) {
+    const orderItem = await OrderItemModel.create({
       orderItemId: uuidv4(),
-      variantId: i.variantId,
-      productId: i.product?.productId || "",
-      productName: i.product?.name || "Sports Product",
-      variantName: i.variant?.variantName || "Standard",
-      sku: i.variant?.sku || i.product?.sku || "",
-      brand: i.product?.brand || null,
-      sportType: i.product?.sportType || [],
-      isBulky: Boolean(i.product?.isBulky),
-      quantity: i.quantity,
-      unitPrice: i.unitPrice,
-      lineTotal: i.lineTotal,
-    }));
-
-    const vendorSubOrder = await VendorSubOrderModel.create({
       orderId: order.orderId,
-      orderNumber: subOrderNumber,
-      sellerId: group.sellerId,
-      storeName: group.storeName,
-      items: subOrderItems,
-      subtotal: subtotalGroup,
-      shippingFee: shippingFeeGroup,
-      commissionRate,
-      commissionAmount,
-      vendorPayout,
-      status: "CONFIRMED",
+      variantId: item.variantId,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      lineTotal: item.lineTotal,
+      itemStatus: "PENDING",
     });
 
-    subOrders.push(vendorSubOrder);
-
-    // Save individual OrderItem records
-    for (const soi of subOrderItems) {
-      const orderItem = await OrderItemModel.create({
-        orderItemId: soi.orderItemId,
-        orderId: order.orderId,
-        variantId: soi.variantId,
-        quantity: soi.quantity,
-        unitPrice: soi.unitPrice,
-        lineTotal: soi.lineTotal,
-        itemStatus: "PENDING",
-      });
-      allOrderItems.push(orderItem);
-    }
+    allOrderItems.push({
+      orderItemId: orderItem.orderItemId,
+      variantId: item.variantId,
+      productId: item.product?.productId || "",
+      productName: item.product?.name || "Sports Product",
+      variantName: item.variant?.variantName || "Standard",
+      sku: item.variant?.sku || item.product?.sku || "",
+      brand: item.product?.brand || null,
+      sportType: item.product?.sportType || [],
+      isBulky: Boolean(item.product?.isBulky),
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      lineTotal: item.lineTotal,
+    });
   }
-
-  // Update Master Order with vendorSubOrderIds
-  await OrderModel.updateOne(
-    { orderId: order.orderId },
-    { vendorSubOrderIds: subOrders.map((so) => so.subOrderId) },
-  );
 
   // 8. Create Transaction Record
   const referenceId = `tx_${uuidv4().replace(/-/g, "").slice(0, 24)}`;
@@ -239,11 +181,11 @@ export const placeOrder = async (
     transactionType: "PAYMENT",
     paymentMethod: paymentMethod || "CREDIT_CARD",
     amount: grandTotal,
-    commissionTotal: round2(commissionTotal),
-    netVendorPayoutTotal: round2(netVendorPayoutTotal),
+    commissionTotal: 0,
+    netVendorPayoutTotal: 0,
     transactionStatus: "COMPLETED",
     referenceId,
-    notes: `Checkout payment for ${orderNumber} across ${subOrders.length} sports vendor(s)`,
+    notes: `Direct purchase payment for ${orderNumber}`,
   });
 
   // 9. Convert Cart & Clear Items
@@ -252,6 +194,18 @@ export const placeOrder = async (
     { cartStatus: "CONVERTED" },
   );
   await CartItemModel.deleteMany({ cartId: enrichedCart.cartId });
+
+  const directPackage = {
+    subOrderId: `${order.orderId}-pkg`,
+    orderNumber: order.orderNumber,
+    sellerId: "STORE_DIRECT",
+    storeName: "SportMarket Direct",
+    itemsCount: allOrderItems.length,
+    subtotal,
+    shippingFee: shipping,
+    status: "CONFIRMED",
+    items: allOrderItems,
+  };
 
   return {
     order: {
@@ -268,17 +222,8 @@ export const placeOrder = async (
       itemsCount: order.itemsCount,
       shippingAddress: order.shippingAddress,
       orderDate: order.orderDate,
-      vendorSubOrders: subOrders.map((so) => ({
-        subOrderId: so.subOrderId,
-        orderNumber: so.orderNumber,
-        sellerId: so.sellerId,
-        storeName: so.storeName,
-        itemsCount: so.items.length,
-        subtotal: so.subtotal,
-        shippingFee: so.shippingFee,
-        status: so.status,
-        items: so.items,
-      })),
+      items: allOrderItems,
+      vendorSubOrders: [directPackage],
     },
     transaction: {
       transactionId: transaction.transactionId,
@@ -297,34 +242,63 @@ export const getOrderHistory = async (userId) => {
     .lean();
 
   const orderIds = orders.map((o) => o.orderId);
-  const subOrders = await VendorSubOrderModel.find({
-    orderId: { $in: orderIds },
-  }).lean();
+  const items = await OrderItemModel.find({ orderId: { $in: orderIds } }).lean();
 
-  const subOrdersByOrder = {};
-  for (const so of subOrders) {
-    if (!subOrdersByOrder[so.orderId]) {
-      subOrdersByOrder[so.orderId] = [];
-    }
-    subOrdersByOrder[so.orderId].push(so);
+  const variantIds = items.map((i) => i.variantId);
+  const variants = await VariantModel.find({ variantId: { $in: variantIds } }).lean();
+  const variantMap = {};
+  for (const v of variants) variantMap[v.variantId] = v;
+
+  const productIds = variants.map((v) => v.productId);
+  const products = await ProductModel.find({ productId: { $in: productIds } }).lean();
+  const productMap = {};
+  for (const p of products) productMap[p.productId] = p;
+
+  const itemsByOrder = {};
+  for (const item of items) {
+    if (!itemsByOrder[item.orderId]) itemsByOrder[item.orderId] = [];
+    const v = variantMap[item.variantId] || {};
+    const p = productMap[v.productId] || {};
+    itemsByOrder[item.orderId].push({
+      ...item,
+      productName: p.name || "Sports Product",
+      variantName: v.variantName || "Standard",
+      sku: v.sku || p.sku || "",
+      brand: p.brand || null,
+      sportType: p.sportType || [],
+      isBulky: Boolean(p.isBulky),
+    });
   }
 
-  const result = orders.map((o) => ({
-    orderId: o.orderId,
-    userId: o.userId,
-    orderNumber: o.orderNumber,
-    orderStatus: o.orderStatus,
-    paymentStatus: o.paymentStatus,
-    subtotalAmount: o.subtotalAmount,
-    taxAmount: o.taxAmount,
-    shippingAmount: o.shippingAmount,
-    discountAmount: o.discountAmount,
-    totalAmount: o.totalAmount,
-    shippingAddress: o.shippingAddress,
-    orderDate: o.orderDate,
-    createdAt: o.createdAt,
-    vendorSubOrders: subOrdersByOrder[o.orderId] || [],
-  }));
+  const result = orders.map((o) => {
+    const orderItems = itemsByOrder[o.orderId] || [];
+    return {
+      orderId: o.orderId,
+      userId: o.userId,
+      orderNumber: o.orderNumber,
+      orderStatus: o.orderStatus,
+      paymentStatus: o.paymentStatus,
+      subtotalAmount: o.subtotalAmount,
+      taxAmount: o.taxAmount,
+      shippingAmount: o.shippingAmount,
+      discountAmount: o.discountAmount,
+      totalAmount: o.totalAmount,
+      shippingAddress: o.shippingAddress,
+      orderDate: o.orderDate,
+      createdAt: o.createdAt,
+      items: orderItems,
+      vendorSubOrders: [
+        {
+          subOrderId: `${o.orderId}-pkg`,
+          orderNumber: o.orderNumber,
+          storeName: "SportMarket Direct",
+          status: o.orderStatus,
+          shippingFee: o.shippingAmount,
+          items: orderItems,
+        },
+      ],
+    };
+  });
 
   return { orders: result };
 };
@@ -337,9 +311,30 @@ export const getOrderById = async (userId, orderId) => {
     throw error;
   }
 
-  const subOrders = await VendorSubOrderModel.find({
-    orderId: order.orderId,
-  }).lean();
+  const items = await OrderItemModel.find({ orderId: order.orderId }).lean();
+  const variantIds = items.map((i) => i.variantId);
+  const variants = await VariantModel.find({ variantId: { $in: variantIds } }).lean();
+  const variantMap = {};
+  for (const v of variants) variantMap[v.variantId] = v;
+
+  const productIds = variants.map((v) => v.productId);
+  const products = await ProductModel.find({ productId: { $in: productIds } }).lean();
+  const productMap = {};
+  for (const p of products) productMap[p.productId] = p;
+
+  const orderItems = items.map((item) => {
+    const v = variantMap[item.variantId] || {};
+    const p = productMap[v.productId] || {};
+    return {
+      ...item,
+      productName: p.name || "Sports Product",
+      variantName: v.variantName || "Standard",
+      sku: v.sku || p.sku || "",
+      brand: p.brand || null,
+      sportType: p.sportType || [],
+      isBulky: Boolean(p.isBulky),
+    };
+  });
 
   const transactions = await TransactionModel.find({
     orderId: order.orderId,
@@ -348,7 +343,17 @@ export const getOrderById = async (userId, orderId) => {
   return {
     order: {
       ...order,
-      vendorSubOrders: subOrders,
+      items: orderItems,
+      vendorSubOrders: [
+        {
+          subOrderId: `${order.orderId}-pkg`,
+          orderNumber: order.orderNumber,
+          storeName: "SportMarket Direct",
+          status: order.orderStatus,
+          shippingFee: order.shippingAmount,
+          items: orderItems,
+        },
+      ],
       transactions,
     },
   };
@@ -362,36 +367,49 @@ export const trackOrder = async (userId, orderId) => {
     throw error;
   }
 
-  const subOrders = await VendorSubOrderModel.find({
-    orderId: order.orderId,
-  }).lean();
+  const items = await OrderItemModel.find({ orderId: order.orderId }).lean();
+  const variantIds = items.map((i) => i.variantId);
+  const variants = await VariantModel.find({ variantId: { $in: variantIds } }).lean();
+  const variantMap = {};
+  for (const v of variants) variantMap[v.variantId] = v;
 
-  const trackingPackages = subOrders.map((so) => ({
-    subOrderId: so.subOrderId,
-    orderNumber: so.orderNumber,
-    vendorStoreName: so.storeName,
-    packageStatus: so.status,
-    carrier: so.carrier || "Standard Carrier Pending",
-    trackingNumber: so.trackingNumber || "Awaiting vendor dispatch",
-    shippedAt: so.shippedAt,
-    deliveredAt: so.deliveredAt,
-    estimatedDeliveryDate: so.estimatedDeliveryDate,
-    items: so.items.map((i) => ({
-      productName: i.productName,
-      variantName: i.variantName,
-      quantity: i.quantity,
-      isBulky: i.isBulky,
-    })),
-  }));
+  const productIds = variants.map((v) => v.productId);
+  const products = await ProductModel.find({ productId: { $in: productIds } }).lean();
+  const productMap = {};
+  for (const p of products) productMap[p.productId] = p;
+
+  const orderItems = items.map((item) => {
+    const v = variantMap[item.variantId] || {};
+    const p = productMap[v.productId] || {};
+    return {
+      productName: p.name || "Sports Product",
+      variantName: v.variantName || "Standard",
+      quantity: item.quantity,
+      isBulky: Boolean(p.isBulky),
+    };
+  });
+
+  const trackingPackages = [
+    {
+      subOrderId: `${order.orderId}-pkg`,
+      orderNumber: order.orderNumber,
+      vendorStoreName: "SportMarket Fulfillment",
+      packageStatus: order.orderStatus,
+      carrier: order.shippingMethod || "Standard Ground Carrier",
+      trackingNumber: order.trackingNumber || `TRK-${order.orderNumber.replace("ORD-", "")}`,
+      shippedAt: order.actualDeliveryDate || null,
+      estimatedDeliveryDate: order.estimatedDeliveryDate || null,
+      items: orderItems,
+    },
+  ];
 
   return {
     orderId: order.orderId,
     orderNumber: order.orderNumber,
     orderStatus: order.orderStatus,
     paymentStatus: order.paymentStatus,
-    shippingAddress: order.shippingAddress,
-    orderDate: order.orderDate,
-    totalPackages: trackingPackages.length,
-    packages: trackingPackages,
+    trackingNumber: order.trackingNumber,
+    packagesCount: 1,
+    trackingPackages,
   };
 };

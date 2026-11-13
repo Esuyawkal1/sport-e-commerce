@@ -7,7 +7,6 @@ import {
   User,
   LogOut,
   Dumbbell,
-  LayoutDashboard,
   Shield,
   Package,
   Menu,
@@ -22,7 +21,7 @@ import ThemeToggle from './ThemeToggle.jsx';
 import brandLogo from '../../assets/sport market logo.webp';
 
 export default function Navbar() {
-  const { isAuthenticated, isAdmin, isVendor, user, logout } = useAuth();
+  const { isAuthenticated, isAdmin, user, logout } = useAuth();
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
   const navigate = useNavigate();
@@ -109,13 +108,6 @@ export default function Navbar() {
         {/* Desktop Centre links */}
         <div className="hidden md:flex items-center gap-6">
           <NavLink to="/catalog" className={linkClass}>Catalog</NavLink>
-          {isVendor && (
-            <NavLink to="/vendor/dashboard" className={linkClass}>
-              <span className="flex items-center gap-1.5">
-                <LayoutDashboard size={14} /> Vendor
-              </span>
-            </NavLink>
-          )}
           {isAdmin && (
             <NavLink to="/admin" className={linkClass}>
               <span className="flex items-center gap-1.5">
@@ -387,23 +379,6 @@ export default function Navbar() {
                     )}
                   </NavLink>
 
-                  {isVendor && (
-                    <NavLink
-                      to="/vendor/dashboard"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={({ isActive }) =>
-                        `flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-[17px] font-medium transition-colors ${
-                          isActive
-                            ? 'bg-brand-accent/10 text-brand-accent font-semibold'
-                            : 'text-text-muted hover:text-text-primary hover:bg-brand-bg'
-                        }`
-                      }
-                    >
-                      <LayoutDashboard size={21} />
-                      <span>Vendor Dashboard</span>
-                    </NavLink>
-                  )}
-
                   {isAdmin && (
                     <NavLink
                       to="/admin"
@@ -440,18 +415,11 @@ export default function Navbar() {
                             {user.email}
                           </p>
                         )}
-                        {(isAdmin || isVendor) && (
+                        {isAdmin && (
                           <div className="flex gap-1.5 mt-1">
-                            {isAdmin && (
-                              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-brand-accent/15 text-brand-accent">
-                                Admin
-                              </span>
-                            )}
-                            {isVendor && (
-                              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500">
-                                Vendor
-                              </span>
-                            )}
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-brand-accent/15 text-brand-accent">
+                              Admin
+                            </span>
                           </div>
                         )}
                       </div>
@@ -478,8 +446,8 @@ export default function Navbar() {
         document.body
       )}
 
-      {/* Sub Navbar with Categories */}
-      <SubNavbar />
+      {/* Sub Navbar with Categories - excluded on Admin Portal */}
+      {!location.pathname.startsWith('/admin') && <SubNavbar />}
     </header>
   );
 }

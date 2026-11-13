@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react';
-import { loginUser, registerUser, registerSeller } from '../api/auth.api.js';
+import { loginUser, registerUser } from '../api/auth.api.js';
 
 const AuthContext = createContext(null);
 
@@ -33,7 +33,6 @@ export function AuthProvider({ children }) {
     const enrichedUser = {
       ...(data.user || {}),
       roles: data.roles || [],
-      vendorProfile: data.vendorProfile || null,
     };
     persist(enrichedUser, data.token);
     return enrichedUser;
@@ -44,18 +43,6 @@ export function AuthProvider({ children }) {
     const enrichedUser = {
       ...(data.user || {}),
       roles: data.role ? [data.role] : [],
-      vendorProfile: null,
-    };
-    persist(enrichedUser, data.token);
-    return enrichedUser;
-  }, [persist]);
-
-  const registerVendor = useCallback(async (payload) => {
-    const data = await registerSeller(payload);
-    const enrichedUser = {
-      ...(data.user || {}),
-      roles: data.role ? [data.role] : [{ roleType: 'SELLER' }],
-      vendorProfile: data.vendorProfile || null,
     };
     persist(enrichedUser, data.token);
     return enrichedUser;
@@ -71,7 +58,6 @@ export function AuthProvider({ children }) {
   const isAuthenticated = Boolean(token);
   const rolesList = (user?.roles || []).map((r) => (typeof r === 'string' ? r : r.roleType));
   const isAdmin  = rolesList.includes('ADMIN') || user?.role === 'admin';
-  const isVendor = rolesList.includes('SELLER') || rolesList.includes('VENDOR') || user?.role === 'vendor' || Boolean(user?.vendorProfile);
 
   return (
     <AuthContext.Provider value={{
@@ -79,10 +65,8 @@ export function AuthProvider({ children }) {
       token,
       isAuthenticated,
       isAdmin,
-      isVendor,
       login,
       register,
-      registerVendor,
       logout,
     }}>
       {children}

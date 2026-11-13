@@ -177,6 +177,11 @@ export default function SubNavbar() {
     navigate(`/#category-${key}`);
   };
 
+  // Never display Storefront Category SubNavbar on Admin Dashboard / Portal
+  if (location.pathname.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <div className="w-full bg-brand-surface/95 border-t border-brand-border/60 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-11 flex items-center gap-6 overflow-x-auto no-scrollbar">

@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { CartProvider } from './context/CartContext.jsx';
 import { WishlistProvider } from './context/WishlistContext.jsx';
 import Layout from './components/layout/Layout.jsx';
+import AdminLayout from './components/admin/AdminLayout.jsx';
 import ScrollToTop from './components/layout/ScrollToTop.jsx';
 import ProtectedRoute from './routes/ProtectedRoute.jsx';
 import ErrorBoundary from './components/ui/ErrorBoundary.jsx';
@@ -18,10 +19,9 @@ import CheckoutPage          from './pages/checkout/CheckoutPage.jsx';
 import OrderConfirmationPage from './pages/orders/OrderConfirmationPage.jsx';
 import OrdersPage            from './pages/orders/OrdersPage.jsx';
 import OrderDetailPage       from './pages/orders/OrderDetailPage.jsx';
-import VendorDashboardPage   from './pages/vendor/VendorDashboardPage.jsx';
 import AdminDashboardPage    from './pages/admin/AdminDashboardPage.jsx';
 import AdminCategoriesPage   from './pages/admin/AdminCategoriesPage.jsx';
-import AdminVendorsPage      from './pages/admin/AdminVendorsPage.jsx';
+import AdminProductsPage     from './pages/admin/AdminProductsPage.jsx';
 import NotFoundPage          from './pages/NotFoundPage.jsx';
 import LoginPage             from './pages/auth/LoginPage.jsx';
 import RegisterPage          from './pages/auth/RegisterPage.jsx';
@@ -143,25 +143,15 @@ export default function App() {
                 }
               />
 
-              {/* Vendor Management Dashboard */}
-              <Route
-                path="/vendor/dashboard"
-                element={
-                  <Layout>
-                    <ProtectedRoute role="vendor">
-                      <VendorDashboardPage />
-                    </ProtectedRoute>
-                  </Layout>
-                }
-              />
-
               {/* Admin Portal & Management */}
               <Route
                 path="/admin"
                 element={
                   <Layout>
                     <ProtectedRoute role="admin">
-                      <AdminDashboardPage />
+                      <AdminLayout>
+                        <AdminDashboardPage />
+                      </AdminLayout>
                     </ProtectedRoute>
                   </Layout>
                 }
@@ -171,7 +161,9 @@ export default function App() {
                 element={
                   <Layout>
                     <ProtectedRoute role="admin">
-                      <AdminDashboardPage />
+                      <AdminLayout>
+                        <AdminDashboardPage />
+                      </AdminLayout>
                     </ProtectedRoute>
                   </Layout>
                 }
@@ -181,17 +173,21 @@ export default function App() {
                 element={
                   <Layout>
                     <ProtectedRoute role="admin">
-                      <AdminCategoriesPage />
+                      <AdminLayout>
+                        <AdminCategoriesPage />
+                      </AdminLayout>
                     </ProtectedRoute>
                   </Layout>
                 }
               />
               <Route
-                path="/admin/vendors"
+                path="/admin/products"
                 element={
                   <Layout>
                     <ProtectedRoute role="admin">
-                      <AdminVendorsPage />
+                      <AdminLayout>
+                        <AdminProductsPage />
+                      </AdminLayout>
                     </ProtectedRoute>
                   </Layout>
                 }

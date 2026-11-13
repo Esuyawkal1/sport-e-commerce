@@ -10,9 +10,7 @@ import orderRoutes from "./routes/order.routes.js";
 import transactionRoutes from "./routes/transaction.routes.js";
 import checkoutRoutes from "./routes/checkout.routes.js";
 import adminCategoryRoutes from "./routes/adminCategory.routes.js";
-import adminVendorRoutes from "./routes/adminVendor.routes.js";
-import vendorRoutes from "./routes/vendor.routes.js";
-import vendorProductRoutes from "./routes/vendorProduct.routes.js";
+import adminProductRoutes from "./routes/adminProduct.routes.js";
 import {
   securityHeaders,
   sanitizeInput,
@@ -62,9 +60,7 @@ app.use("/api/v1", (req, res, next) => {
 app.use("/api/v1/auth", authLimiter, authRoutes);
 app.use("/api/v1", catalogRoutes);
 app.use("/api/v1/admin/categories", adminCategoryRoutes);
-app.use("/api/v1/admin/vendors", adminVendorRoutes);
-app.use("/api/v1/vendors", vendorRoutes);
-app.use("/api/v1/vendor", vendorProductRoutes);
+app.use("/api/v1/admin/products", adminProductRoutes);
 app.use("/api/v1/cart", cartRoutes);
 app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/transactions", transactionRoutes);
