@@ -68,7 +68,7 @@ export const processCheckout = async (req, res) => {
       status: statusCode,
       message: result.isDuplicate
         ? "Existing order returned via idempotency key."
-        : "Order placed successfully across vendor packages.",
+        : "Order placed successfully.",
       ...result,
     });
   } catch (error) {

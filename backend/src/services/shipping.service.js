@@ -83,16 +83,41 @@ export const calculateVendorShipping = (vendorItems, { hasFreeShippingCoupon = f
 };
 
 /**
- * Calculates shipping breakdown for the entire cart across all vendors.
+ * Calculates shipping breakdown for the entire cart.
+ * Supports direct cart items array as well as legacy groupings.
  */
 export const calculateCartShipping = (
-  vendorGroups,
+  itemsOrGroups,
   { hasFreeShippingCoupon = false } = {},
 ) => {
+  if (!itemsOrGroups || itemsOrGroups.length === 0) {
+    return { totalShipping: 0, breakdown: [] };
+  }
+
+  const isGrouped = itemsOrGroups[0] && Array.isArray(itemsOrGroups[0].items);
+
+  if (!isGrouped) {
+    const shippingInfo = calculateVendorShipping(itemsOrGroups, {
+      hasFreeShippingCoupon,
+    });
+    return {
+      totalShipping: shippingInfo.shippingFee,
+      breakdown: [
+        {
+          shippingFee: shippingInfo.shippingFee,
+          isBulky: shippingInfo.isBulky,
+          totalWeightKg: shippingInfo.totalWeightKg,
+          shippingMethod: shippingInfo.shippingMethod,
+        },
+      ],
+      ...shippingInfo,
+    };
+  }
+
   let totalShipping = 0;
   const breakdown = [];
 
-  for (const group of vendorGroups) {
+  for (const group of itemsOrGroups) {
     const shippingInfo = calculateVendorShipping(group.items, {
       hasFreeShippingCoupon,
     });

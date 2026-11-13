@@ -178,11 +178,10 @@ export default function AdminCategoriesPage() {
   });
 
   return (
-    <div className="flex flex-col gap-8 pb-16 max-w-6xl mx-auto">
+    <div className="flex flex-col gap-8 pb-16 w-full">
       {/* ── Admin Header ─────────────────────────────────── */}
       <AdminHeader
         title="Taxonomy & Category Manager"
-        description="Dynamically structure sports disciplines, hierarchy, and store catalog taxonomy."
         actions={
           <div className="flex items-center gap-2.5">
             <Button

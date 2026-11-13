@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { UserModel } from "../models/user.model.js";
 import { RoleModel } from "../models/role.model.js";
-import { VendorProfileModel } from "../models/vendorProfile.model.js";
 import { CategoryModel } from "../models/category.model.js";
 import { ProductModel } from "../models/product.model.js";
 import { VariantModel } from "../models/variant.model.js";
@@ -20,7 +19,6 @@ export const seedSportsMarketplace = async () => {
 
   const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 10;
   const adminPasswordHash = await bcrypt.hash("Admin1234!", saltRounds);
-  const sellerPasswordHash = await bcrypt.hash("Seller1234!", saltRounds);
   const buyerPasswordHash = await bcrypt.hash("Buyer1234!", saltRounds);
 
   // 1. Seed or update Admin User
@@ -61,87 +59,7 @@ export const seedSportsMarketplace = async () => {
     console.log("✅ Created Customer user (athlete@sportmarket.com)");
   }
 
-  // 3. Seed Verified Sports Vendors
-  const vendorDefinitions = [
-    {
-      email: "procourt@sportmarket.com",
-      firstName: "Roger",
-      lastName: "Courts",
-      storeName: "ProCourt Racket Sports",
-      slug: "procourt-racket-sports",
-      specialization: ["tennis", "badminton", "padel", "racket-sports"],
-      description:
-        "Official dealer for premium tennis, badminton, and squash equipment with certified stringing services.",
-      city: "Miami",
-    },
-    {
-      email: "apex@sportmarket.com",
-      firstName: "David",
-      lastName: "Sterling",
-      storeName: "Apex Athletic Gear",
-      slug: "apex-athletic-gear",
-      specialization: ["football", "running", "boxing", "team-sports"],
-      description:
-        "Top-tier football gear, team uniforms, training apparel, and combat safety equipment.",
-      city: "Dallas",
-    },
-    {
-      email: "irongrip@sportmarket.com",
-      firstName: "Elena",
-      lastName: "Vance",
-      storeName: "IronGrip Strength Equipment",
-      slug: "irongrip-strength-equipment",
-      specialization: ["gym", "strength", "fitness", "crossfit"],
-      description:
-        "Commercial and home gym heavy equipment, Olympic barbells, urethane bumper plates, and power racks.",
-      city: "Columbus",
-    },
-  ];
-
-  const vendorMap = {};
-
-  for (const v of vendorDefinitions) {
-    let user = await UserModel.findOne({ email: v.email });
-    if (!user) {
-      user = await UserModel.create({
-        email: v.email,
-        passwordHash: sellerPasswordHash,
-        firstName: v.firstName,
-        lastName: v.lastName,
-        phoneNumber: "+12025550188",
-        city: v.city,
-        country: "USA",
-      });
-      await RoleModel.create({
-        userId: user.userId,
-        roleType: "SELLER",
-      });
-    }
-
-    let profile = await VendorProfileModel.findOne({ userId: user.userId });
-    if (!profile) {
-      profile = await VendorProfileModel.create({
-        userId: user.userId,
-        storeName: v.storeName,
-        slug: v.slug,
-        description: v.description,
-        sportsSpecialization: v.specialization,
-        contactEmail: v.email,
-        contactPhone: "+12025550188",
-        businessAddress: {
-          city: v.city,
-          country: "USA",
-        },
-        isVerified: true,
-        rating: 4.8,
-        commissionRate: 0.1,
-      });
-      console.log(`✅ Created Vendor Profile: ${v.storeName}`);
-    }
-    vendorMap[v.slug] = { user, profile };
-  }
-
-  // 4. Seed Dynamic Categories
+  // 3. Seed Dynamic Categories
   const categoryTree = [
     {
       name: "Team Sports",
@@ -292,7 +210,6 @@ export const seedSportsMarketplace = async () => {
         "Engineered with Braid 45 construction for enhanced pocketing feel and unbelievable stability at impact. 97 sq in head size with a 16x19 string pattern.",
       basePrice: 269.0,
       categorySlug: "tennis",
-      vendorSlug: "procourt-racket-sports",
       sportType: ["tennis", "racket-sports"],
       gearCategory: "EQUIPMENT",
       brand: "Wilson",
@@ -338,7 +255,6 @@ export const seedSportsMarketplace = async () => {
         "Refined over 8 years and 1,700 hours of testing, Nike Aerowsculpt technology uses molded grooves to disrupt airflow across the ball for 30% truer flight.",
       basePrice: 165.0,
       categorySlug: "football",
-      vendorSlug: "apex-athletic-gear",
       sportType: ["football", "team-sports"],
       gearCategory: "EQUIPMENT",
       brand: "Nike",
@@ -382,7 +298,6 @@ export const seedSportsMarketplace = async () => {
         "Forged from alloy steel with calibrated 28mm shaft diameter, precision volcano knurling, and 4 needle bearings per sleeve for effortless spin during Olympic lifts.",
       basePrice: 349.0,
       categorySlug: "free-weights-barbells",
-      vendorSlug: "irongrip-strength-equipment",
       sportType: ["gym", "strength", "crossfit"],
       gearCategory: "EQUIPMENT",
       brand: "IronGrip",
@@ -429,7 +344,6 @@ export const seedSportsMarketplace = async () => {
         "High-density multi-layered foam padding absorbs punch shock while the ergonomic fist shape keeps hands properly aligned to prevent wrist strain.",
       basePrice: 65.0,
       categorySlug: "boxing-gear",
-      vendorSlug: "apex-athletic-gear",
       sportType: ["boxing", "combat-sports"],
       gearCategory: "PROTECTIVE",
       brand: "Everlast",
@@ -473,7 +387,6 @@ export const seedSportsMarketplace = async () => {
         "Aeromodular frame geometry combined with FSI Spin open string pattern delivers unmatched heavy spin and penetrating court depth.",
       basePrice: 289.0,
       categorySlug: "tennis",
-      vendorSlug: "procourt-racket-sports",
       sportType: ["tennis", "racket-sports"],
       gearCategory: "EQUIPMENT",
       brand: "Babolat",
@@ -518,7 +431,6 @@ export const seedSportsMarketplace = async () => {
         "Rotational Generator System with Namd graphite in the shaft produces overwhelming steep smashes and rapid shot recovery.",
       basePrice: 239.0,
       categorySlug: "badminton",
-      vendorSlug: "procourt-racket-sports",
       sportType: ["badminton", "racket-sports"],
       gearCategory: "EQUIPMENT",
       brand: "Yonex",
@@ -554,7 +466,6 @@ export const seedSportsMarketplace = async () => {
         "Designed to find the back of the net with maximum swerve and ball control on dry natural grass pitches.",
       basePrice: 279.0,
       categorySlug: "football",
-      vendorSlug: "apex-athletic-gear",
       sportType: ["football", "team-sports"],
       gearCategory: "FOOTWEAR",
       brand: "Adidas",
@@ -653,7 +564,6 @@ export const seedSportsMarketplace = async () => {
         "Laid-in composite channels and cushion core carcass provide the softest feel and superior grip trusted by varsity and college programs.",
       basePrice: 79.0,
       categorySlug: "basketball",
-      vendorSlug: "apex-athletic-gear",
       sportType: ["basketball", "team-sports"],
       gearCategory: "EQUIPMENT",
       brand: "Wilson",
@@ -689,7 +599,6 @@ export const seedSportsMarketplace = async () => {
         "Forged stainless steel center hubs encased in ultra-durable high-durometer urethane to withstand tens of thousands of drops.",
       basePrice: 215.0,
       categorySlug: "free-weights-barbells",
-      vendorSlug: "irongrip-strength-equipment",
       sportType: ["gym", "strength", "crossfit"],
       gearCategory: "EQUIPMENT",
       brand: "IronGrip",
@@ -724,7 +633,6 @@ export const seedSportsMarketplace = async () => {
         "Air-resistance flywheel delivers smooth, quiet operation that responds to your stroke intensity. Connects via Bluetooth to heart rate monitors and fitness apps.",
       basePrice: 1150.0,
       categorySlug: "cardio-machines",
-      vendorSlug: "irongrip-strength-equipment",
       sportType: ["fitness", "cardio", "rowing"],
       gearCategory: "EQUIPMENT",
       brand: "IronGrip",
@@ -761,7 +669,6 @@ export const seedSportsMarketplace = async () => {
         "Engineered in Thailand with 100% Skintex synthetic leather and flexible two-way hook-and-loop closure for zero slippage during hard sparring.",
       basePrice: 59.0,
       categorySlug: "boxing-gear",
-      vendorSlug: "apex-athletic-gear",
       sportType: ["boxing", "combat-sports"],
       gearCategory: "PROTECTIVE",
       brand: "Venum",
@@ -796,7 +703,6 @@ export const seedSportsMarketplace = async () => {
         "Ergonomically designed to promote proper fist closure and wrist protection with reinforced palm and reinforced seams for long-lasting combat durability.",
       basePrice: 59.0,
       categorySlug: "boxing-gear",
-      vendorSlug: "apex-athletic-gear",
       sportType: ["boxing", "combat-sports"],
       gearCategory: "PROTECTIVE",
       brand: "Venum",
@@ -827,12 +733,9 @@ export const seedSportsMarketplace = async () => {
 
   for (const item of sportsProducts) {
     const category = categoryMap[item.categorySlug];
-    const vendor = vendorMap[item.vendorSlug];
 
-    if (!category || !vendor) {
-      console.warn(
-        `Skipping product ${item.name}: Category or Vendor not found.`,
-      );
+    if (!category) {
+      console.warn(`Skipping product ${item.name}: Category not found.`);
       continue;
     }
 
@@ -840,7 +743,7 @@ export const seedSportsMarketplace = async () => {
     if (!product) {
       product = await ProductModel.create({
         categoryId: category.categoryId,
-        sellerId: vendor.user.userId,
+        sellerId: null,
         name: item.name,
         description: item.description,
         longDescription: item.longDescription,
@@ -854,7 +757,7 @@ export const seedSportsMarketplace = async () => {
         isBulky: item.isBulky,
         specifications: item.specifications,
         images: item.images || [],
-        createdBy: vendor.user.userId,
+        createdBy: adminUser.userId,
         rating: 4.9,
       });
       console.log(`✅ Created Product: ${item.name} (${item.brand})`);
@@ -889,7 +792,7 @@ export const seedSportsMarketplace = async () => {
           quantityAvailable: v.stock,
           reorderLevel: 5,
           reorderQuantity: 20,
-          warehouseLocation: `${vendor.profile.city}-WH-A1`,
+          warehouseLocation: "CENTRAL-WH-A1",
         });
         console.log(
           `  └─ Created Variant: ${v.variantName} [Stock: ${v.stock}]`,
@@ -898,7 +801,7 @@ export const seedSportsMarketplace = async () => {
     }
   }
 
-  // 6. Seed Default Sports Coupons
+  // 4. Seed Default Sports Coupons
   await seedDefaultCoupons();
   console.log("✅ Seeded Default Sports Marketplace Coupons (SPORT10, FREESHIP, FITNESS25)");
 

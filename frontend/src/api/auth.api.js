@@ -7,9 +7,6 @@ import api from './client.js';
 export const registerUser = (payload) =>
   api.post('/auth/register', payload).then((r) => r.data);
 
-export const registerSeller = (payload) =>
-  api.post('/auth/register-seller', payload).then((r) => r.data);
-
 export const loginUser = (payload) =>
   api.post('/auth/login', payload).then((r) => r.data);
 

@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Layers,
-  Store,
   Package,
   ShieldCheck,
   Plus,
@@ -11,10 +10,9 @@ import {
   ExternalLink,
   CheckCircle2,
   AlertCircle,
-  Building2,
+  Boxes,
 } from 'lucide-react';
-import { getAdminCategories, getAdminVendors } from '../../api/admin.api.js';
-import { getProducts } from '../../api/catalog.api.js';
+import { getAdminCategories, getAdminProducts } from '../../api/admin.api.js';
 import AdminHeader from '../../components/admin/AdminHeader.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Badge from '../../components/ui/Badge.jsx';
@@ -22,7 +20,7 @@ import Skeleton from '../../components/ui/Skeleton.jsx';
 
 export default function AdminDashboardPage() {
   const [categories, setCategories] = useState([]);
-  const [vendors, setVendors] = useState([]);
+  const [recentProducts, setRecentProducts] = useState([]);
   const [totalProducts, setTotalProducts] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,15 +29,14 @@ export default function AdminDashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const [catData, vendorData, prodData] = await Promise.all([
+      const [catData, prodData] = await Promise.all([
         getAdminCategories().catch(() => ({ categories: [] })),
-        getAdminVendors().catch(() => ({ vendors: [] })),
-        getProducts({ limit: 1 }).catch(() => ({ total: 0 })),
+        getAdminProducts({ limit: 6 }).catch(() => ({ products: [], total: 0 })),
       ]);
 
       setCategories(catData?.categories || []);
-      setVendors(vendorData?.vendors || []);
-      setTotalProducts(prodData?.total || 0);
+      setRecentProducts(prodData?.products || []);
+      setTotalProducts(prodData?.total || prodData?.pagination?.total || 0);
     } catch (err) {
       console.error('Failed to load admin dashboard data:', err);
       setError('Unable to load some administrative dashboard metrics.');
@@ -62,16 +59,10 @@ export default function AdminDashboardPage() {
     };
   }, [loadDashboardData]);
 
-  // Derived metrics
-  const rootCategories = categories.filter((c) => !c.parentCategoryId);
-  const subCategories = categories.filter((c) => Boolean(c.parentCategoryId));
-  const verifiedVendors = vendors.filter((v) => v.isVerified);
-
   return (
-    <div className="pb-16 max-w-7xl mx-auto">
+    <div className="pb-16 w-full">
       <AdminHeader
         title="Admin Overview"
-        description="Monitor marketplace taxonomy, manage verified sports vendors, and oversee product catalog health."
         actions={
           <Button
             variant="outline"
@@ -109,9 +100,7 @@ export default function AdminDashboardPage() {
             <div className="text-2xl sm:text-3xl font-extrabold text-text-primary mb-1">
               {loading ? <Skeleton className="h-8 w-16" /> : categories.length}
             </div>
-            <p className="text-xs text-text-muted">
-              {rootCategories.length} root sport types &bull; {subCategories.length} subcategories
-            </p>
+            <p className="text-xs text-text-muted">Root sports & equipment</p>
           </div>
           <div className="mt-4 pt-3 border-t border-brand-border/60">
             <Link
@@ -124,42 +113,13 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Vendors Stat */}
-        <div className="p-5 rounded-xl bg-brand-surface border border-brand-border flex flex-col justify-between shadow-xs">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-              Active Vendors
-            </span>
-            <span className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
-              <Store size={18} />
-            </span>
-          </div>
-          <div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-text-primary mb-1">
-              {loading ? <Skeleton className="h-8 w-16" /> : vendors.length}
-            </div>
-            <p className="text-xs text-text-muted">
-              {verifiedVendors.length} verified sellers on platform
-            </p>
-          </div>
-          <div className="mt-4 pt-3 border-t border-brand-border/60">
-            <Link
-              to="/admin/vendors"
-              className="text-xs font-semibold text-brand-accent hover:underline flex items-center gap-1"
-            >
-              <span>Manage Vendors</span>
-              <ArrowRight size={12} />
-            </Link>
-          </div>
-        </div>
-
         {/* Live Products Stat */}
         <div className="p-5 rounded-xl bg-brand-surface border border-brand-border flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between gap-2 mb-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-              Live Products
+              Catalog Products
             </span>
-            <span className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+            <span className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
               <Package size={18} />
             </span>
           </div>
@@ -167,9 +127,34 @@ export default function AdminDashboardPage() {
             <div className="text-2xl sm:text-3xl font-extrabold text-text-primary mb-1">
               {loading ? <Skeleton className="h-8 w-16" /> : totalProducts}
             </div>
-            <p className="text-xs text-text-muted">
-              Multi-vendor gear across sport categories
-            </p>
+            <p className="text-xs text-text-muted">Active sports items & gear</p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-brand-border/60">
+            <Link
+              to="/admin/products"
+              className="text-xs font-semibold text-brand-accent hover:underline flex items-center gap-1"
+            >
+              <span>Manage Products</span>
+              <ArrowRight size={12} />
+            </Link>
+          </div>
+        </div>
+
+        {/* Live Storefront Stat */}
+        <div className="p-5 rounded-xl bg-brand-surface border border-brand-border flex flex-col justify-between shadow-xs">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+              Live Storefront
+            </span>
+            <span className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
+              <Boxes size={18} />
+            </span>
+          </div>
+          <div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-text-primary mb-1">
+              Active
+            </div>
+            <p className="text-xs text-text-muted">Direct online shopping</p>
           </div>
           <div className="mt-4 pt-3 border-t border-brand-border/60">
             <Link
@@ -196,9 +181,7 @@ export default function AdminDashboardPage() {
             <div className="text-2xl sm:text-3xl font-extrabold text-text-primary mb-1">
               RBAC
             </div>
-            <p className="text-xs text-text-muted">
-              Admin &bull; Seller &bull; Customer roles active
-            </p>
+            <p className="text-xs text-text-muted">Admin & Customer access</p>
           </div>
           <div className="mt-4 pt-3 border-t border-brand-border/60">
             <span className="text-xs font-semibold text-emerald-500 flex items-center gap-1">
@@ -219,69 +202,64 @@ export default function AdminDashboardPage() {
             to="/admin/categories"
             className="p-4 rounded-xl border border-brand-border hover:border-brand-accent/50 bg-brand-bg/50 hover:bg-brand-bg transition-all group"
           >
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3">
               <span className="p-2 rounded-lg bg-brand-accent/10 text-brand-accent group-hover:scale-105 transition-transform">
                 <Plus size={18} />
               </span>
-              <span className="font-bold text-sm text-text-primary">
-                New Category
-              </span>
+              <div>
+                <span className="font-bold text-sm text-text-primary block">
+                  New Category
+                </span>
+                <span className="text-xs text-text-muted">Add root sports or equipment hierarchy</span>
+              </div>
             </div>
-            <p className="text-xs text-text-muted">
-              Define root sports or nested equipment subcategories with dynamic display order.
-            </p>
           </Link>
 
           <Link
-            to="/admin/vendors"
+            to="/admin/products"
             className="p-4 rounded-xl border border-brand-border hover:border-brand-accent/50 bg-brand-bg/50 hover:bg-brand-bg transition-all group"
           >
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3">
               <span className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 group-hover:scale-105 transition-transform">
-                <Building2 size={18} />
+                <Package size={18} />
               </span>
-              <span className="font-bold text-sm text-text-primary">
-                Register Vendor
-              </span>
+              <div>
+                <span className="font-bold text-sm text-text-primary block">
+                  New Product
+                </span>
+                <span className="text-xs text-text-muted">Register gear and set warehouse stock</span>
+              </div>
             </div>
-            <p className="text-xs text-text-muted">
-              Onboard a new sports vendor or assign seller privileges to an existing user.
-            </p>
           </Link>
 
           <Link
             to="/catalog"
             className="p-4 rounded-xl border border-brand-border hover:border-brand-accent/50 bg-brand-bg/50 hover:bg-brand-bg transition-all group"
           >
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3">
               <span className="p-2 rounded-lg bg-blue-500/10 text-blue-500 group-hover:scale-105 transition-transform">
-                <Package size={18} />
+                <ExternalLink size={18} />
               </span>
-              <span className="font-bold text-sm text-text-primary">
-                Review Storefront
-              </span>
+              <div>
+                <span className="font-bold text-sm text-text-primary block">
+                  Review Storefront
+                </span>
+                <span className="text-xs text-text-muted">Verify live catalog as customer</span>
+              </div>
             </div>
-            <p className="text-xs text-text-muted">
-              Verify how categories, brands, and vendor merchandise appear to customers.
-            </p>
           </Link>
         </div>
       </div>
 
-      {/* ── Two-Column Overview: Categories & Vendors ─────────────────── */}
+      {/* ── Two-Column Overview: Categories & Products ─────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column: Recent Categories */}
         <div className="p-6 rounded-2xl bg-brand-surface border border-brand-border shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-4 border-b border-brand-border mb-4">
-              <div>
-                <h2 className="text-base font-bold text-text-primary">
-                  Taxonomy Hierarchy
-                </h2>
-                <p className="text-xs text-text-muted mt-0.5">
-                  Sport categories configured in catalog
-                </p>
-              </div>
+              <h2 className="text-base font-bold text-text-primary">
+                Taxonomy Hierarchy
+              </h2>
               <Link to="/admin/categories">
                 <Button variant="ghost" size="sm" className="gap-1 text-xs">
                   <span>View All</span>
@@ -345,19 +323,14 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Right Column: Registered Vendors */}
+        {/* Right Column: Recent Products Catalog */}
         <div className="p-6 rounded-2xl bg-brand-surface border border-brand-border shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-4 border-b border-brand-border mb-4">
-              <div>
-                <h2 className="text-base font-bold text-text-primary">
-                  Registered Vendors
-                </h2>
-                <p className="text-xs text-text-muted mt-0.5">
-                  Sports merchants onboarded on platform
-                </p>
-              </div>
-              <Link to="/admin/vendors">
+              <h2 className="text-base font-bold text-text-primary">
+                Catalog Inventory
+              </h2>
+              <Link to="/admin/products">
                 <Button variant="ghost" size="sm" className="gap-1 text-xs">
                   <span>View All</span>
                   <ArrowRight size={14} />
@@ -371,56 +344,71 @@ export default function AdminDashboardPage() {
                 <Skeleton className="h-12 w-full" />
                 <Skeleton className="h-12 w-full" />
               </div>
-            ) : vendors.length === 0 ? (
+            ) : recentProducts.length === 0 ? (
               <p className="text-sm text-text-muted py-6 text-center">
-                No vendors registered yet.
+                No products added to catalog yet.
               </p>
             ) : (
               <div className="space-y-2.5">
-                {vendors.slice(0, 6).map((v) => (
-                  <div
-                    key={v.vendorId}
-                    className="p-3 rounded-xl bg-brand-bg/60 border border-brand-border/60 flex items-center justify-between gap-3 text-sm"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <p className="font-semibold text-text-primary truncate">
-                          {v.storeName}
-                        </p>
-                        {v.isVerified && (
-                          <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-500">
-                            Verified
-                          </span>
+                {recentProducts.slice(0, 6).map((p) => {
+                  const stock = p.totalStockAvailable ?? 0;
+                  return (
+                    <div
+                      key={p.productId}
+                      className="p-3 rounded-xl bg-brand-bg/60 border border-brand-border/60 flex items-center justify-between gap-3 text-sm"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {p.images?.[0] ? (
+                          <img
+                            src={p.images[0]}
+                            alt={p.name}
+                            className="w-10 h-10 object-cover rounded-lg border border-brand-border bg-white shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg border border-brand-border bg-brand-surface flex items-center justify-center text-text-muted shrink-0">
+                            <Package size={18} />
+                          </div>
                         )}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-text-primary truncate">
+                            {p.name}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-text-muted">
+                            <span className="font-mono">{p.sku}</span>
+                            <span>&bull;</span>
+                            <span className="font-bold text-text-primary">
+                              ${Number(p.basePrice || 0).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-xs text-text-muted truncate">
-                        {v.contactEmail || v.user?.email || 'No email provided'}
-                      </p>
-                    </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {Array.isArray(v.sportsSpecialization) &&
-                        v.sportsSpecialization.slice(0, 2).map((s) => (
-                          <span
-                            key={s}
-                            className="text-[10px] font-medium px-2 py-0.5 rounded bg-brand-surface border border-brand-border text-text-muted hidden sm:inline"
-                          >
-                            {s}
-                          </span>
-                        ))}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            stock > 10
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                              : stock > 0
+                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                : 'bg-red-500/10 text-red-400 border-red-500/20'
+                          }`}
+                        >
+                          {stock} in stock
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
 
           <div className="mt-5 pt-3 border-t border-brand-border text-center">
             <Link
-              to="/admin/vendors"
+              to="/admin/products"
               className="text-xs font-semibold text-brand-accent hover:underline"
             >
-              Manage all vendor profiles &rarr;
+              Manage all products & inventory &rarr;
             </Link>
           </div>
         </div>

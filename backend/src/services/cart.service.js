@@ -3,7 +3,6 @@ import { CartItemModel } from "../models/cartItem.model.js";
 import { VariantModel } from "../models/variant.model.js";
 import { ProductModel } from "../models/product.model.js";
 import { InventoryModel } from "../models/inventory.model.js";
-import { VendorProfileModel } from "../models/vendorProfile.model.js";
 import {
   calculateVendorShipping,
   calculateCartShipping,
@@ -60,27 +59,13 @@ export const buildEnrichedCart = async (cart) => {
     productMap[p.productId] = p;
   }
 
-  const sellerIds = [
-    ...new Set(products.map((p) => p.sellerId).filter(Boolean)),
-  ];
-  const vendors = await VendorProfileModel.find({
-    userId: { $in: sellerIds },
-  }).lean();
-  const vendorMap = {};
-  for (const ven of vendors) {
-    vendorMap[ven.userId] = ven;
-  }
-
   // Enrich cart items
   const enrichedItems = [];
-  const vendorGroupsMap = {};
   const allSports = new Set();
 
   for (const item of cartItems) {
     const variant = variantMap[item.variantId] || null;
     const product = variant ? productMap[variant.productId] : null;
-    const sellerId = product?.sellerId || "MARKETPLACE_DIRECT";
-    const vendorProfile = vendorMap[sellerId] || null;
 
     if (product?.sportType) {
       product.sportType.forEach((s) => allSports.add(s.toLowerCase()));
@@ -113,37 +98,14 @@ export const buildEnrichedCart = async (cart) => {
             attributes: variant.attributes,
           }
         : null,
-      seller: {
-        sellerId,
-        storeName: vendorProfile?.storeName || "Official Marketplace Store",
-        slug: vendorProfile?.slug || "official-store",
-        isVerified: vendorProfile?.isVerified || true,
-      },
       addedAt: item.addedAt,
       updatedAt: item.updatedAt,
     };
 
     enrichedItems.push(enrichedItem);
-
-    if (!vendorGroupsMap[sellerId]) {
-      vendorGroupsMap[sellerId] = {
-        sellerId,
-        storeName: vendorProfile?.storeName || "Official Marketplace Store",
-        slug: vendorProfile?.slug || "official-store",
-        items: [],
-        subtotal: 0,
-        itemCount: 0,
-      };
-    }
-
-    vendorGroupsMap[sellerId].items.push(enrichedItem);
-    vendorGroupsMap[sellerId].subtotal = round2(
-      vendorGroupsMap[sellerId].subtotal + item.lineTotal,
-    );
-    vendorGroupsMap[sellerId].itemCount += item.quantity;
   }
 
-  // Calculate totals and multi-vendor shipping
+  // Calculate totals and cart shipping
   let subtotalAmount = 0;
   let totalItems = 0;
   for (const item of cartItems) {
@@ -152,21 +114,22 @@ export const buildEnrichedCart = async (cart) => {
   }
   subtotalAmount = round2(subtotalAmount);
 
-  const vendorGroups = Object.values(vendorGroupsMap);
   const isFreeShipCoupon = cart.couponCode === "FREESHIP";
   const { totalShipping, breakdown: shippingBreakdown } = calculateCartShipping(
-    vendorGroups,
+    enrichedItems,
     { hasFreeShippingCoupon: isFreeShipCoupon },
   );
 
-  // Attach calculated shipping to vendor groups
-  for (const group of vendorGroups) {
-    const match = shippingBreakdown.find((b) => b.sellerId === group.sellerId);
-    group.shippingFee = match ? match.shippingFee : 0;
-    group.isBulky = match ? match.isBulky : false;
-    group.totalWeightKg = match ? match.totalWeightKg : 0;
-    group.shippingMethod = match ? match.shippingMethod : "STANDARD_GROUND";
-  }
+  const vendorGroups = [
+    {
+      sellerId: "STORE_DIRECT",
+      storeName: "SportMarket Official",
+      items: enrichedItems,
+      subtotal: subtotalAmount,
+      itemCount: totalItems,
+      shippingFee: totalShipping,
+    },
+  ];
 
   // Calculate coupon discount if applied
   let discountAmount = 0;

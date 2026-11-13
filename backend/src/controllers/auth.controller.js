@@ -1,6 +1,5 @@
 import {
   registerUser,
-  registerSeller,
   loginUser,
   getMeUser,
 } from "../services/auth.service.js";
@@ -41,47 +40,6 @@ export const register = async (req, res) => {
       status: 500,
       error: "Internal Server Error",
       message: "An unexpected server error occurred during user registration.",
-    });
-  }
-};
-
-export const registerSellerHandler = async (req, res) => {
-  try {
-    const { email, password, firstName, lastName, storeName } = req.body;
-
-    if (!email || !password || !firstName || !lastName || !storeName) {
-      return res.status(400).json({
-        status: 400,
-        error: "Bad Request",
-        message:
-          "Missing required fields: email, password, firstName, lastName, and storeName are required.",
-      });
-    }
-
-    if (typeof password !== "string" || password.length < 8) {
-      return res.status(400).json({
-        status: 400,
-        error: "Bad Request",
-        message: "Password must be at least 8 characters long.",
-      });
-    }
-
-    const result = await registerSeller(req.body);
-    return res.status(201).json(result);
-  } catch (error) {
-    if (error.statusCode === 400) {
-      return res.status(400).json({
-        status: 400,
-        error: "Bad Request",
-        message: error.message,
-      });
-    }
-    console.error("Seller registration error:", error);
-    return res.status(500).json({
-      status: 500,
-      error: "Internal Server Error",
-      message:
-        "An unexpected server error occurred during seller registration.",
     });
   }
 };

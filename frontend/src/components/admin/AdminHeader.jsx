@@ -1,15 +1,13 @@
 import { NavLink, Link } from 'react-router-dom';
-import { Shield, LayoutDashboard, Layers, Store, ExternalLink } from 'lucide-react';
+import { Shield, LayoutDashboard, Layers, Package, ExternalLink, ChevronRight } from 'lucide-react';
 import Badge from '../ui/Badge.jsx';
 
 /**
- * Shared Header & Navigation Tab Bar for all Admin Console pages.
- * Provides cohesive desktop and mobile tab navigation between:
- * - Overview Dashboard (/admin)
- * - Category Taxonomy (/admin/categories)
- * - Vendor & Seller Management (/admin/vendors)
+ * Shared Header for all Admin Console pages.
+ * Displays page title, breadcrumbs, descriptions, and action CTAs.
+ * Can optionally render horizontal tabs if requested via showTabs prop.
  */
-export default function AdminHeader({ title, description, actions }) {
+export default function AdminHeader({ title, description, actions, showTabs = false }) {
   const tabs = [
     {
       to: '/admin',
@@ -24,9 +22,9 @@ export default function AdminHeader({ title, description, actions }) {
       end: false,
     },
     {
-      to: '/admin/vendors',
-      label: 'Vendors & Stores',
-      icon: Store,
+      to: '/admin/products',
+      label: 'Products & Inventory',
+      icon: Package,
       end: false,
     },
   ];
@@ -36,17 +34,22 @@ export default function AdminHeader({ title, description, actions }) {
       {/* ── Top Bar: Title & Action CTA ─────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="p-1.5 rounded-lg bg-brand-accent/15 text-brand-accent border border-brand-accent/30 flex items-center justify-center">
-              <Shield size={18} />
-            </span>
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-accent">
-              Admin Control Center
-            </span>
-            <Badge variant="accent" size="sm">
+          {/* Breadcrumb & Portal Badge */}
+          <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-text-muted">
+            <Link
+              to="/admin"
+              className="hover:text-brand-accent transition-colors flex items-center gap-1.5"
+            >
+              <Shield size={13} className="text-brand-accent" />
+              <span>Admin Console</span>
+            </Link>
+            <ChevronRight size={12} className="text-text-muted/60" />
+            <span className="text-text-primary">{title || 'Overview'}</span>
+            <Badge variant="accent" size="sm" className="ml-1">
               Staff Portal
             </Badge>
           </div>
+
           <h1 className="text-2xl sm:text-3xl font-bold font-sans text-text-primary tracking-tight">
             {title || 'Marketplace Administration'}
           </h1>
@@ -70,39 +73,41 @@ export default function AdminHeader({ title, description, actions }) {
         </div>
       </div>
 
-      {/* ── Navigation Tabs ─────────────────────────────────────────────── */}
-      <div className="border-b border-brand-border flex items-center gap-2 overflow-x-auto no-scrollbar">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <NavLink
-              key={tab.to}
-              to={tab.to}
-              end={tab.end}
-              className={({ isActive }) =>
-                `relative flex items-center gap-2 py-3 px-3.5 text-sm font-semibold transition-colors duration-150 cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? 'text-brand-accent font-bold'
-                    : 'text-text-muted hover:text-text-primary'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <Icon size={16} />
-                  <span>{tab.label}</span>
-                  {isActive && (
-                    <span
-                      className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-brand-accent rounded-t-full"
-                      aria-hidden="true"
-                    />
-                  )}
-                </>
-              )}
-            </NavLink>
-          );
-        })}
-      </div>
+      {/* ── Optional Navigation Tabs ─────────────────────────────────────── */}
+      {showTabs && (
+        <div className="border-b border-brand-border flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <NavLink
+                key={tab.to}
+                to={tab.to}
+                end={tab.end}
+                className={({ isActive }) =>
+                  `relative flex items-center gap-2 py-3 px-3.5 text-sm font-semibold transition-colors duration-150 cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? 'text-brand-accent font-bold'
+                      : 'text-text-muted hover:text-text-primary'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <Icon size={16} />
+                    <span>{tab.label}</span>
+                    {isActive && (
+                      <span
+                        className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-brand-accent rounded-t-full"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </>
+                )}
+              </NavLink>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
